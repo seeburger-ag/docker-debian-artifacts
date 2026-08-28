@@ -1,9 +1,10 @@
 # docker-debian-artifacts
 
-Official builds of [debuerreotype](https://github.com/debuerreotype/debuerreotype)-generated [Debian](https://www.debian.org/) tarballs for [use in Docker](https://github.com/docker-library/official-images/blob/master/library/debian).
+This is a SEEBURGER fork running a workflow tagging all Docker image commits
+for `arm64v8` and `amd64` for archive purpose.
 
-## Update Frequency
+## License
 
-We strive to publish updated builds at least once a month (~30 days), but will also rebuild earlier if there is a major or minor Debian release *or* if there is a severe security issue that warrants doing so.
+The .github/workflow/archive-upstream.yml GitHub Action is licensed under the repositories original Apache-2.0 license.
 
-(We try to avoid publishing *too* frequently, because the downstream rebuild effect every time we do is absolutely immense.)
+(c) Copyright 2026 SEEBURGER AG, Germany. All rights reserved.

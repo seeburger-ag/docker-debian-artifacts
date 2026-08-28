@@ -1,0 +1,68 @@
+name: Archive upstream heads (Debian Docker Images)
+
+on:
+  schedule:
+    - cron: "43 */8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  protect:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        branch:
+          - dist-amd64
+          - dist-arm64v8
+
+    steps:
+      - name: Initialize repository
+        run: |
+          set -euo pipefail
+          git init -b tmp
+          git config user.name "SEEBURGER GitHub Action"
+          git config user.email "github-action-archive-upstream@seeburger.local"
+          git remote add origin   "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git remote add upstream "https://github.com/debuerreotype/docker-debian-artifacts.git"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Fetch upstream head
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=3 upstream "refs/heads/${BRANCH}:refs/remotes/upstream/${BRANCH}"
+
+      - name: Protect head
+        env:
+          BRANCH: ${{ matrix.branch }}
+        run: |
+          set -euo pipefail
+          HEAD=$(git rev-parse "refs/remotes/upstream/${BRANCH}")
+          # Read the serial file from the fetched commit.
+          SERIAL=$(git show "${HEAD}:serial" | tr -d '[:space:]')
+
+          if [[ ! "$SERIAL" =~ ^[0-9]+$ ]]; then
+            echo "Invalid serial: '$SERIAL'"
+            exit 1
+          fi
+
+          TAG="archive/${BRANCH}-${SERIAL}"
+
+          echo "Upstream HEAD: ${HEAD}  Serial: ${SERIAL}  Tag: ${TAG}"
+          # Idempotent: don't push the same tag twice.
+          if git ls-remote --exit-code origin "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "Already tagged."
+            exit 0
+          fi
+
+          git tag -a "${TAG}" "${HEAD}" -m "seeburger archive $BRANCH $SERIAL"
+          git push origin "refs/tags/${TAG}"
+          
+          git push -f origin "${HEAD}:refs/heads/$BRANCH"
+
+          echo "pushed."
