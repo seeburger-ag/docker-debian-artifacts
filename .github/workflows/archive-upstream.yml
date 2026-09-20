@@ -2,7 +2,7 @@ name: Archive upstream heads (Debian Docker Images)
 
 on:
   schedule:
-    - cron: "43 */8 * * *"
+    - cron: "43 3 * * 1,3,5"
   workflow_dispatch:
 
 permissions:
@@ -36,12 +36,6 @@ jobs:
         run: |
           set -euo pipefail
           git fetch --no-tags --depth=3 upstream "refs/heads/${BRANCH}:refs/remotes/upstream/${BRANCH}"
-
-      - name: Protect head
-        env:
-          BRANCH: ${{ matrix.branch }}
-        run: |
-          set -euo pipefail
           HEAD=$(git rev-parse "refs/remotes/upstream/${BRANCH}")
           # Read the serial file from the fetched commit.
           SERIAL=$(git show "${HEAD}:serial" | tr -d '[:space:]')
@@ -64,5 +58,3 @@ jobs:
           git push origin "refs/tags/${TAG}"
           
           git push -f origin "${HEAD}:refs/heads/$BRANCH"
-
-          echo "pushed."
